@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coritario - Compartir Programa</title>
+    <!-- Google Fonts: Outfit & Material Symbols -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Color System - Material 3 Dark (Harmonious Blues/Indigos) */
+            --background: #0f1016;
+            --surface: rgba(27, 28, 34, 0.7);
+            --surface-variant: rgba(45, 46, 56, 0.6);
+            --primary: #a8c7fa;
+            --on-primary: #062e6f;
+            --primary-container: #004494;
+            --on-primary-container: #d6e3ff;
+            --secondary: #c2e7ff;
+            --on-secondary: #003355;
+            --outline: #8d9199;
+            --text-primary: #e3e2e6;
+            --text-secondary: #c7c6ca;
+            --card-border: rgba(255, 255, 255, 0.08);
+            --shadow-color: rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--background);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated Ambient Background Gradients */
+        body::before {
+            content: '';
+            position: absolute;
+            top: -20%;
+            left: -20%;
+            width: 80%;
+            height: 80%;
+            background: radial-gradient(circle, rgba(0, 68, 148, 0.25) 0%, rgba(15, 16, 22, 0) 70%);
+            z-index: 0;
+            pointer-events: none;
+            animation: pulse-ambient 12s infinite alternate;
+        }
+
+        body::after {
+            content: '';
+            position: absolute;
+            bottom: -20%;
+            right: -20%;
+            width: 80%;
+            height: 80%;
+            background: radial-gradient(circle, rgba(168, 199, 250, 0.08) 0%, rgba(15, 16, 22, 0) 70%);
+            z-index: 0;
+            pointer-events: none;
+            animation: pulse-ambient-opposite 15s infinite alternate;
+        }
+
+        @keyframes pulse-ambient {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(10%, 10%) scale(1.1); }
+        }
+
+        @keyframes pulse-ambient-opposite {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(-10%, -10%) scale(1.1); }
+        }
+
+        /* Glassmorphic Container Card */
+        .card {
+            background: var(--surface);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 28px;
+            padding: 40px 30px;
+            width: 100%;
+            max-width: 480px;
+            text-align: center;
+            box-shadow: 0 16px 40px var(--shadow-color);
+            z-index: 10;
+            transform: translateY(20px);
+            opacity: 0;
+            animation: slide-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes slide-up {
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Logo and Icon Styling */
+        .icon-container {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            background: linear-gradient(135deg, var(--primary-container), #1a237e);
+            border-radius: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 24px rgba(0, 68, 148, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .icon-container::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0) 100%);
+            pointer-events: none;
+        }
+
+        .app-icon {
+            font-size: 42px;
+            color: var(--primary);
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-4px) rotate(5deg); }
+        }
+
+        /* Typography */
+        h1 {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #ffffff 0%, var(--primary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 30px;
+            font-weight: 300;
+        }
+
+        /* Program Summary Area */
+        .program-summary {
+            background-color: var(--surface-variant);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: none; /* Shown dynamically if URL has songs */
+            text-align: left;
+            animation: fade-in 0.5s ease forwards;
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .program-title {
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .program-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Auto Redirect Status Indicator */
+        .redirect-status {
+            display: none; /* Shown dynamically if redirecting */
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 13px;
+            color: var(--primary);
+            margin-bottom: 24px;
+            font-weight: 400;
+        }
+
+        .loader-dots {
+            display: inline-flex;
+            gap: 3px;
+        }
+
+        .loader-dots span {
+            width: 6px;
+            height: 6px;
+            background-color: var(--primary);
+            border-radius: 50%;
+            animation: dot-blink 1.4s infinite both;
+        }
+
+        .loader-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .loader-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes dot-blink {
+            0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+            40% { opacity: 1; transform: scale(1.2); }
+        }
+
+        /* Action Buttons */
+        .buttons-group {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            width: 100%;
+        }
+
+        .btn {
+            font-family: 'Outfit', sans-serif;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 16px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+            text-decoration: none;
+            border: none;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Button ripple effect */
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 120%;
+            height: 120%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translate(-50%, -50%) scale(0);
+            border-radius: 50%;
+            transition: transform 0.5s ease-out;
+        }
+
+        .btn:active::after {
+            transform: translate(-50%, -50%) scale(1);
+            transition: 0s;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: var(--on-primary);
+            box-shadow: 0 4px 12px rgba(168, 199, 250, 0.2);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(168, 199, 250, 0.35);
+            background-color: #bad3fc;
+        }
+
+        .btn-secondary {
+            background-color: var(--surface-variant);
+            color: var(--secondary);
+            border: 1px solid var(--card-border);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            background-color: rgba(60, 62, 74, 0.8);
+            border-color: var(--primary);
+        }
+
+        .btn-icon {
+            font-size: 20px;
+        }
+
+        /* Feature Badge Layout (for standard landing page) */
+        .features {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 10px 0 30px;
+            text-align: left;
+        }
+
+        .feature-item {
+            background-color: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .feature-item span.icon {
+            color: var(--primary);
+            font-size: 20px;
+            background: rgba(168, 199, 250, 0.1);
+            padding: 6px;
+            border-radius: 8px;
+        }
+
+        .feature-text {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 32px;
+            font-size: 12px;
+            color: var(--outline);
+            font-weight: 300;
+        }
+
+        footer a {
+            color: var(--primary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        footer a:hover {
+            color: #ffffff;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <div class="icon-container">
+            <span class="material-symbols-rounded app-icon">library_music</span>
+        </div>
+        
+        <h1 id="page-title">Coritario</h1>
+        <p class="subtitle" id="page-subtitle">Organiza tus himnos, cantos y programas de culto en un solo lugar.</p>
+        
+        <!-- Dinámicamente mostrado si es un programa compartido -->
+        <div id="program-box" class="program-summary">
+            <div class="program-title">
+                <span class="material-symbols-rounded" style="font-size: 18px;">share</span>
+                <span>Programa Compartido</span>
+            </div>
+            <div class="program-desc" id="program-details">
+                Se ha compartido un programa musical personalizado para la app.
+            </div>
+        </div>
+
+        <!-- Indicador de redirección automática -->
+        <div id="redirect-indicator" class="redirect-status">
+            <span>Abriendo en la app Coritario</span>
+            <div class="loader-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="buttons-group">
+            <a href="corario://culto/detalle" id="open-app-btn" class="btn btn-secondary" style="display: none;">
+                <span class="material-symbols-rounded btn-icon">open_in_new</span>
+                <span>Abrir en la aplicación</span>
+            </a>
+            
+            <a href="app-release.apk" class="btn btn-primary" download id="download-btn">
+                <span class="material-symbols-rounded btn-icon">download</span>
+                <span id="download-text">Descargar App (.APK)</span>
+            </a>
+        </div>
+
+        <!-- Sección de características (solo se muestra en modo landing normal) -->
+        <div id="features-section" class="features">
+            <div class="feature-item">
+                <span class="material-symbols-rounded icon">menu_book</span>
+                <div class="feature-text">Himnos y Letras</div>
+            </div>
+            <div class="feature-item">
+                <span class="material-symbols-rounded icon">queue_music</span>
+                <div class="feature-text">Crea Programas</div>
+            </div>
+            <div class="feature-item">
+                <span class="material-symbols-rounded icon">wifi_off</span>
+                <div class="feature-text">100% Offline</div>
+            </div>
+            <div class="feature-item">
+                <span class="material-symbols-rounded icon">dark_mode</span>
+                <div class="feature-text">Diseño Oscuro</div>
+            </div>
+        </div>
+
+        <footer>
+            Desarrollado por <a href="https://github.com/CeritNorts" target="_blank" rel="noopener">CeritNorts</a>
+        </footer>
+    </div>
+
+    <script>
+        // Procesar parámetros de URL
+        const params = new URLSearchParams(window.location.search);
+        const songsParam = params.get('songs');
+
+        const titleEl = document.getElementById('page-title');
+        const subtitleEl = document.getElementById('page-subtitle');
+        const programBox = document.getElementById('program-box');
+        const programDetails = document.getElementById('program-details');
+        const redirectIndicator = document.getElementById('redirect-indicator');
+        const openAppBtn = document.getElementById('open-app-btn');
+        const featuresSection = document.getElementById('features-section');
+        const downloadText = document.getElementById('download-text');
+
+        if (songsParam && songsParam.trim() !== '') {
+            // Es un deep link para un programa
+            const songList = songsParam.split(',').filter(id => id.trim() !== '');
+            const numSongs = songList.length;
+
+            titleEl.textContent = "Programa Compartido";
+            subtitleEl.textContent = "Recibiste una selección musical para los cultos. Puedes abrirla directamente en tu aplicación.";
+            
+            // Mostrar resumen
+            programBox.style.display = 'block';
+            programDetails.textContent = `Este programa musical contiene ${numSongs} ${numSongs === 1 ? 'canto seleccionado' : 'cantos seleccionados'}.`;
+            
+            // Ocultar sección de características generales para enfocar en la acción de compartir
+            featuresSection.style.display = 'none';
+
+            // Configurar enlace de la aplicación
+            const deepLinkUrl = `corario://culto/detalle?songs=${songsParam}`;
+            openAppBtn.href = deepLinkUrl;
+            openAppBtn.style.display = 'inline-flex';
+            
+            // Actualizar texto del botón de descarga
+            downloadText.textContent = "Descargar App para abrir enlace";
+
+            // Intentar abrir la app automáticamente
+            redirectIndicator.style.display = 'flex';
+            
+            // Intentar abrir mediante cambio de ubicación
+            setTimeout(() => {
+                window.location.href = deepLinkUrl;
+            }, 500);
+
+            // Ocultar el indicador después de unos segundos
+            setTimeout(() => {
+                redirectIndicator.style.display = 'none';
+            }, 4000);
+        }
+    </script>
+</body>
+</html>
