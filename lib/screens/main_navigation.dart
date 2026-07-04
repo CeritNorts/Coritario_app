@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:app_links/app_links.dart';
 import 'package:coritario_app/models/song.dart';
@@ -99,6 +100,7 @@ class _MainNavigationState extends State<MainNavigation> {
   }
 
   void _checkUpdates() {
+    if (kIsWeb) return; // Saltar actualización en la plataforma Web
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final updateService = UpdateService();
       final updateInfo = await updateService.checkForUpdates();

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "299482473495",
+    "project_id": "coritario-cf487",
+    "storage_bucket": "coritario-cf487.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:299482473495:android:64e7fe5bd9ec4618f36852",
+        "android_client_info": {
+          "package_name": "com.example.coritario_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBaOABGsihxd2gPacCszIUQwWVzfLhaa9E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

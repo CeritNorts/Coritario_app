@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:coritario_app/models/song.dart';
 import 'package:coritario_app/models/program.dart';
 
@@ -14,14 +16,22 @@ class DatabaseService {
 
   Database? _database;
 
+  // Estructuras en memoria para simulación Web en desarrollo/testing
+  static final Set<String> _webFavorites = {};
+  static final List<Program> _webPrograms = [];
+
   Future<Database> get database async {
+    if (kIsWeb) {
+      throw UnsupportedError("El acceso a la base de datos SQLite no está soportado en la Web.");
+    }
     if (_database != null) return _database!;
     _database = await _initDatabase();
     return _database!;
   }
 
   Future<Database> _initDatabase() async {
-    if (Platform.isLinux || Platform.isWindows) {
+    // Solo inicializar FFI si es escritorio nativo y no estamos en la Web
+    if (!kIsWeb && (Platform.isLinux || Platform.isWindows)) {
       sqfliteFfiInit();
       databaseFactory = databaseFactoryFfi;
     }
@@ -93,6 +103,37 @@ class DatabaseService {
   }
 
   Future<List<Song>> getSongs() async {
+    if (kIsWeb) {
+      // Intentar cargar desde Firestore primero
+      try {
+        final snapshot = await FirebaseFirestore.instance.collection('canciones').get();
+        if (snapshot.docs.isNotEmpty) {
+          return snapshot.docs.map((doc) {
+            final data = doc.data();
+            return Song(
+              id: doc.id,
+              title: data['title'] as String? ?? '',
+              artist: data['artist'] as String? ?? '',
+              numHimno: data['num_himno'] as int?,
+              lyrics: data['lyrics'] as String? ?? '',
+            );
+          }).toList();
+        }
+      } catch (e) {
+        debugPrint("Firestore no disponible o sin inicializar. Cargando del JSON local: $e");
+      }
+
+      // Fallback a JSON local si falla Firestore
+      try {
+        final String jsonString = await rootBundle.loadString('assets/data/canciones.json');
+        final List<dynamic> jsonResponse = jsonDecode(jsonString);
+        return jsonResponse.map((data) => Song.fromJson(data)).toList();
+      } catch (e) {
+        debugPrint("Error al cargar JSON local: $e");
+        return [];
+      }
+    }
+
     final db = await database;
     
     // Inicializamos y sincronizamos los datos si es necesario
@@ -113,6 +154,34 @@ class DatabaseService {
 
   Future<List<Song>> getSongsByIds(List<String> ids) async {
     if (ids.isEmpty) return [];
+
+    if (kIsWeb) {
+      // Cargar desde Firestore o fallback
+      try {
+        final List<Song> results = [];
+        for (var id in ids) {
+          final doc = await FirebaseFirestore.instance.collection('canciones').doc(id).get();
+          if (doc.exists) {
+            final data = doc.data()!;
+            results.add(Song(
+              id: doc.id,
+              title: data['title'] as String? ?? '',
+              artist: data['artist'] as String? ?? '',
+              numHimno: data['num_himno'] as int?,
+              lyrics: data['lyrics'] as String? ?? '',
+            ));
+          }
+        }
+        if (results.isNotEmpty) return results;
+      } catch (e) {
+        debugPrint("Error al consultar IDs en Firestore, usando fallback local: $e");
+      }
+
+      final allSongs = await getSongs();
+      final Map<String, Song> songMap = {for (var s in allSongs) s.id: s};
+      return ids.map((id) => songMap[id]).whereType<Song>().toList();
+    }
+
     final db = await database;
     // Creamos placeholders (?, ?, ...) para la consulta IN
     final placeholders = List.filled(ids.length, '?').join(',');
@@ -140,17 +209,44 @@ class DatabaseService {
   // --- Operaciones de Programas ---
 
   Future<List<Program>> getPrograms() async {
+    if (kIsWeb) {
+      return _webPrograms;
+    }
+
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query('programs', orderBy: 'id DESC');
     return List.generate(maps.length, (i) => Program.fromMap(maps[i]));
   }
 
   Future<int> insertProgram(Program program) async {
+    if (kIsWeb) {
+      final newId = _webPrograms.length + 1;
+      final newProgram = Program(
+        id: newId,
+        name: program.name,
+        date: program.date,
+        inicioSongs: program.inicioSongs,
+        predicacionSongs: program.predicacionSongs,
+        ofrendasSongs: program.ofrendasSongs,
+      );
+      _webPrograms.insert(0, newProgram);
+      return newId;
+    }
+
     final db = await database;
     return await db.insert('programs', program.toMap());
   }
 
   Future<int> updateProgram(Program program) async {
+    if (kIsWeb) {
+      final idx = _webPrograms.indexWhere((p) => p.id == program.id);
+      if (idx != -1) {
+        _webPrograms[idx] = program;
+        return 1;
+      }
+      return 0;
+    }
+
     final db = await database;
     return await db.update(
       'programs',
@@ -161,6 +257,11 @@ class DatabaseService {
   }
 
   Future<int> deleteProgram(int id) async {
+    if (kIsWeb) {
+      _webPrograms.removeWhere((p) => p.id == id);
+      return 1;
+    }
+
     final db = await database;
     return await db.delete(
       'programs',
@@ -189,7 +290,7 @@ class DatabaseService {
         }
       } catch (e) {
         // En caso de error, omitimos para no interferir con la carga normal
-        print("Error al sincronizar canciones: $e");
+        debugPrint("Error al sincronizar canciones: $e");
       }
     }
   }
@@ -200,7 +301,7 @@ class DatabaseService {
       final List<dynamic> jsonResponse = jsonDecode(jsonString);
       await _importSongsList(db, jsonResponse);
     } catch (e) {
-      print("Error al importar canciones del JSON: $e");
+      debugPrint("Error al importar canciones del JSON: $e");
     }
   }
 
@@ -229,6 +330,10 @@ class DatabaseService {
   // --- Operaciones de Favoritos ---
 
   Future<bool> isFavorite(String songId) async {
+    if (kIsWeb) {
+      return _webFavorites.contains(songId);
+    }
+
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'favorites',
@@ -239,6 +344,16 @@ class DatabaseService {
   }
 
   Future<bool> toggleFavorite(String songId) async {
+    if (kIsWeb) {
+      if (_webFavorites.contains(songId)) {
+        _webFavorites.remove(songId);
+        return false; // Ya no es favorito
+      } else {
+        _webFavorites.add(songId);
+        return true; // Ahora es favorito
+      }
+    }
+
     final db = await database;
     final List<Map<String, dynamic>> exists = await db.query(
       'favorites',
@@ -262,6 +377,11 @@ class DatabaseService {
   }
 
   Future<List<Song>> getFavoriteSongs() async {
+    if (kIsWeb) {
+      final allSongs = await getSongs();
+      return allSongs.where((s) => _webFavorites.contains(s.id)).toList();
+    }
+
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.rawQuery('''
       SELECT s.* FROM songs s
